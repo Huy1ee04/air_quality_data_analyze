@@ -1,6 +1,7 @@
 import os
 import json
 import boto3
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -54,6 +55,7 @@ def upload_to_dynamodb():
 
         uploaded += len(batch_data)
         print(f"Đã tải {uploaded}/{total_records} bản ghi vào DynamoDB...")
+        time.sleep(0.98) # Giới hạn WCU không quá 25
 
     print(f"Hoàn thành tải {total_records} bản ghi vào DynamoDB!")
 
