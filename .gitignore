@@ -2,6 +2,7 @@
 .env
 *.env
 **/airflow_env/
+**/google-key.json
 
 
 # Bỏ qua file cấu hình

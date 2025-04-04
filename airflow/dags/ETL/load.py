@@ -1,61 +1,55 @@
 import os
 import json
-import boto3
-import time
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pandas as pd
+from google.cloud import storage
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
-AWS_REGION = "ap-southeast-1"
-DYNAMODB_TABLE = "air-pollution-data"
-ACCESS_KEY = os.getenv("ACCESS_KEY")
-SECRET_KEY = os.getenv("SECRET_KEY")
-file_path = "/opt/airflow/dags/air_quality_data.json"
+# Google Cloud Storage Configuration
+GCS_BUCKET = "project-bigdata-bucket"
+GCS_FOLDER = "air_quality_data/"
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+LOCAL_FILE_PATH = "/opt/airflow/dags/air_quality_data.json"
 
-if not ACCESS_KEY or not SECRET_KEY:
-    raise ValueError("ACCESS_KEY hoặc SECRET_KEY không được tìm thấy! Kiểm tra lại .env file.")
+if not GOOGLE_APPLICATION_CREDENTIALS:
+    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS không được tìm thấy! Kiểm tra lại .env file.")
 
-# Kết nối DynamoDB
-dynamodb = boto3.resource(
-    'dynamodb',
-    region_name=AWS_REGION,
-    aws_access_key_id=ACCESS_KEY,
-    aws_secret_access_key=SECRET_KEY
-)
-table = dynamodb.Table(DYNAMODB_TABLE)
+# Initialize GCS Client
+storage_client = storage.Client()
+bucket = storage_client.bucket(GCS_BUCKET)
 
-def upload_to_dynamodb():
-    """Tải dữ liệu từ JSON lên DynamoDB theo từng batch nhỏ"""
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"JSON data file not found at {file_path}")
+def upload_to_gcs():
+    """Upload JSON data file to Google Cloud Storage as partitioned Parquet."""
+    if not os.path.exists(LOCAL_FILE_PATH):
+        raise FileNotFoundError(f"JSON data file not found at {LOCAL_FILE_PATH}")
 
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(LOCAL_FILE_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
+    
+    df = pd.DataFrame(data)
+    
+    # Ensure time column is datetime
+    if not pd.api.types.is_datetime64_any_dtype(df['dt']):
+        df['dt'] = pd.to_datetime(df['dt'], unit='s')
+    
+    df["year"] = df["dt"].dt.year
+    df["month"] = df["dt"].dt.month
+    df["day"] = df["dt"].dt.day
 
-    BATCH_SIZE = 25  # DynamoDB chỉ cho phép tối đa 25 items mỗi batch
-    total_records = len(data)
-    uploaded = 0
+    table = pa.Table.from_pandas(df)
+    gcs = pa.fs.GcsFileSystem()
+    
+    pq.write_to_dataset(
+        table,
+        root_path=f"{GCS_BUCKET}/{GCS_FOLDER}",
+        partition_cols=["year", "month", "day"],
+        filesystem=gcs
+    )
+    
+    print(f"Dữ liệu đã được tải lên GCS dưới dạng phân vùng Parquet tại gs://{GCS_BUCKET}/{GCS_FOLDER}")
 
-    for i in range(0, total_records, BATCH_SIZE):
-        batch_data = data[i:i+BATCH_SIZE]
-
-        with table.batch_writer() as batch:
-            for item in batch_data:
-                lat_lon = f"{item['lat']}_{item['lon']}"
-                clean_item = {
-                    "lat_lon": lat_lon,
-                    "dt": int(item["dt"]),
-                    "main_aqi": item.get("main.aqi", None),
-                }
-
-                components_cleaned = {k.replace(".", "_"): str(v) for k, v in item.items() if k.startswith("components.")}
-
-                clean_item.update(components_cleaned)
-                batch.put_item(Item=clean_item)
-
-        uploaded += len(batch_data)
-        print(f"Đã tải {uploaded}/{total_records} bản ghi vào DynamoDB...")
-        time.sleep(0.98) # Giới hạn WCU không quá 25
-
-    print(f"Hoàn thành tải {total_records} bản ghi vào DynamoDB!")
 

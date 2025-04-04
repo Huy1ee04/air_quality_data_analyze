@@ -14,7 +14,7 @@ default_args = {
 }
 
 dag = DAG(
-    "air_quality_to_dynamodb",
+    "air_quality_to_gcs",
     default_args=default_args,
     schedule_interval= None,   # "0 12 * * *",  # Runs daily at 12:00 UTC (~19:00 VN)
     catchup=False
@@ -26,10 +26,10 @@ task_fetch_data = PythonOperator(
     dag=dag
 )
 
-task_upload_dynamodb = PythonOperator(
-    task_id="upload_to_dynamodb",
-    python_callable=load.upload_to_dynamodb,
+task_upload_gcs = PythonOperator(
+    task_id="upload_to_gcs",
+    python_callable=load.upload_to_gcs,
     dag=dag
 )
 
-task_fetch_data >> task_upload_dynamodb
+task_fetch_data >> task_upload_gcs
