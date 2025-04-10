@@ -31,6 +31,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ubuntu/air_quality_data_analyze/airflow 
-            docker compose down
-            docker compose up -d --build
+            pwd
+            # cd /home/ubuntu/air_quality_data_analyze/airflow 
+            # docker compose down
+            # docker compose up -d --build
