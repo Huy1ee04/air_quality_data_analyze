@@ -17,14 +17,16 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Deploy to Server 1
-        uses: easingthemes/ssh-deploy@main
+      # Dự án github mã nguồn mở của tác giả easingthemes dùng để deploy lên server bằng SSH
+        uses: easingthemes/ssh-deploy@main   
         env:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
           REMOTE_HOST: ${{ secrets.HOST_DNS }}
           REMOTE_USER: ${{ secrets.USERNAME }}
-          TARGET: /home/ubuntu 
+          TARGET: /home/ubuntu   # Hiện tại đang hard-code
 
       - name: Executing remote ssh commands using ssh key
+      # Dự án mã nguồn mở do tác giả "appleboy" cung cấp kênh giao tiếp giữa github action và server qua ssh
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST_DNS }}
@@ -32,6 +34,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             pwd
-            # cd /home/ubuntu/air_quality_data_analyze/airflow 
+            # cd /home/ubuntu/air_quality_data_analyze/airflow   #Hiện tại đang hard-code
             # docker compose down
             # docker compose up -d --build
