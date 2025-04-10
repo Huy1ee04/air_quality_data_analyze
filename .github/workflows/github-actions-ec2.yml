@@ -1,6 +1,6 @@
 name: Push-to-EC2
 
-# Trigger deployment only on push to main branch
+# Trigger deployment only on push to aws branch
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to EC2 on master branch push
+    name: Deploy to EC2 on aws branch push
     runs-on: ubuntu-latest
 
     steps:
