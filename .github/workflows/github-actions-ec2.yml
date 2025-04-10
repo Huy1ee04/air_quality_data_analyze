@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - aws
+      - main
 
 jobs:
   deploy:
