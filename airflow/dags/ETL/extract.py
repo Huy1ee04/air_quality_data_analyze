@@ -52,15 +52,15 @@ def fetch_air_quality_data():
                             "dt": entry["dt"],
                             "lat": lat,
                             "lon": lon,
-                            "main.aqi": entry["main"]["aqi"],
-                            "components.co": entry["components"]["co"],
-                            "components.no": entry["components"]["no"],
-                            "components.no2": entry["components"]["no2"],
-                            "components.o3": entry["components"]["o3"],
-                            "components.so2": entry["components"]["so2"],
-                            "components.pm2_5": entry["components"]["pm2_5"],
-                            "components.pm10": entry["components"]["pm10"],
-                            "components.nh3": entry["components"]["nh3"]
+                            "aqi": entry["main"]["aqi"],
+                            "co": entry["components"]["co"],
+                            "no": entry["components"]["no"],
+                            "no2": entry["components"]["no2"],
+                            "o3": entry["components"]["o3"],
+                            "so2": entry["components"]["so2"],
+                            "pm2_5": entry["components"]["pm2_5"],
+                            "pm10": entry["components"]["pm10"],
+                            "nh3": entry["components"]["nh3"]
                         }
                         all_data.append(record)
 

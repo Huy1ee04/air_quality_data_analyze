@@ -40,6 +40,8 @@ def upload_to_gcs():
     df["month"] = df["dt"].dt.month
     df["day"] = df["dt"].dt.day
 
+    df['dt'] = df['dt'].astype('int64') // 1_000_000_000
+
     table = pa.Table.from_pandas(df)
     gcs = pa.fs.GcsFileSystem()
     
@@ -52,4 +54,4 @@ def upload_to_gcs():
     
     print(f"Dữ liệu đã được tải lên GCS dưới dạng phân vùng Parquet tại gs://{GCS_BUCKET}/{GCS_FOLDER}")
 
-
+upload_to_gcs()
