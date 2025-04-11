@@ -4,7 +4,6 @@
 **/airflow_env/
 **/google-key.json
 
-
 # Bỏ qua file cấu hình
 *.cfg
 
@@ -15,4 +14,17 @@
 .DS_Store
 Thumbs.db
 *.log
-airflow/logs/scheduler/latest
+
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore Airflow logs
+airflow/logs/
+
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore Airflow logs
+airflow/logs/
