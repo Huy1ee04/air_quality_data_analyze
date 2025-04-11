@@ -17,6 +17,7 @@ x-airflow-common: &airflow-common
     - ${AIRFLOW_PROJ_DIR:-.}/requirements.txt:/requirements.txt  # Run 'pip install -r /requirements.txt' in container
     - ${AIRFLOW_PROJ_DIR:-.}/.env:/opt/airflow/.env
     - ${AIRFLOW_PROJ_DIR:-.}/google-key.json:/opt/airflow/google-key.json  
+    - ${AIRFLOW_PROJ_DIR:-.}/start_time.txt:/opt/airflow/start_time.txt
     - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:

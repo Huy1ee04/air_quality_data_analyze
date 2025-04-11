@@ -16,7 +16,7 @@ default_args = {
 dag = DAG(
     "air_quality_to_gcs",
     default_args=default_args,
-    schedule_interval= None,   # "0 12 * * *",  # Runs daily at 12:00 UTC (~19:00 VN)
+    schedule_interval= None,   # "5 12 * * *",  # Runs daily at 12:00 UTC (~19:00 VN)
     catchup=False
 )
 

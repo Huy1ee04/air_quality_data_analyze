@@ -11,10 +11,25 @@ BASE_URL = "http://api.openweathermap.org/data/2.5/air_pollution/history"
 
 # Phạm vi tọa độ Việt Nam (tăng step để giảm request)
 lat_start, lat_end = 8.0,  23.5
-lon_start, lon_end = 102.0, 110.0
+lon_start, lon_end = 102.0, 110.5
 step = 0.25  
 
 file_path = "/opt/airflow/dags/air_quality_data.json"
+start_time_file = "/opt/airflow/start_time.txt"
+
+# Đọc thời gian bắt đầu từ file
+def read_start_time():
+    if os.path.exists(start_time_file):
+        with open(start_time_file, "r") as f:
+            return int(f.read().strip())
+    else:
+        # Mặc định nếu chưa có file: 1/1/2023 00:00:00 UTC
+        return 1672531200
+
+# Ghi lại thời gian sau khi lấy xong
+def write_new_start_time(end_time):
+    with open(start_time_file, "w") as f:
+        f.write(str(end_time))
 
 def fetch_air_quality_data():
     # Tải dữ liệu cũ nếu file đã tồn tại
@@ -27,6 +42,10 @@ def fetch_air_quality_data():
     else:
         all_data = []
 
+    # Lấy Unix time hiện tại
+    current_unix_time = int(time.time())
+    end_time = current_unix_time  
+
     # Lặp qua từng điểm lat, lon
     lat = lat_start
     while lat <= lat_end:
@@ -37,8 +56,8 @@ def fetch_air_quality_data():
             params = {
                 "lat": lat,
                 "lon": lon,
-                "start": 1672531200,  # 1/1/2023 00:00:00 UTC
-                "end": 1735689600,    # 1/1/2025 00:00:00 UTC
+                "start": read_start_time(),  # Thời gian bắt đầu từ file
+                "end": end_time,    # 1/1/2025 00:00:00 UTC
                 "appid": API_KEY
             }
 
@@ -87,4 +106,8 @@ def fetch_air_quality_data():
         lat += step  # Tăng lat sau khi quét xong 1 hàng
 
     print("✅ Done! All data collected.")
+    # Ghi lại thời gian kết thúc
+    write_new_start_time(end_time)
+    print(f"New start time saved: {end_time}")
+
 

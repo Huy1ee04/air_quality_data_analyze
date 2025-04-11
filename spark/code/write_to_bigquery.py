@@ -2,6 +2,8 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, avg, from_unixtime, hour, to_date, year, month, dayofmonth, monotonically_increasing_id
 import os
 from dotenv import load_dotenv
+from google.cloud import bigquery
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -19,6 +21,18 @@ spark = SparkSession.builder \
     .config("spark.hadoop.google.cloud.project.id", "iron-envelope-455716-g8") \
     .getOrCreate()
 
+# Tìm thời điểm lưu cuối cùng
+bq_client = bigquery.Client()
+query = """
+    SELECT MAX(TIMESTAMP(datetime)) as max_datetime
+    FROM `iron-envelope-455716-g8.aq_data.fact_air_quality`
+"""
+result = bq_client.query(query).result()
+max_datetime = None
+row = result.next()
+max_datetime = row["max_datetime"]
+
+
 # Đọc từ GCS
 df = spark.read.parquet("gs://project-bigdata-bucket/air_quality_data/")
 
@@ -26,6 +40,11 @@ df = spark.read.parquet("gs://project-bigdata-bucket/air_quality_data/")
 df = df.withColumn("datetime", from_unixtime(col("dt"))) \
        .withColumn("date", to_date(col("datetime"))) \
        .withColumn("hour", hour(col("datetime")))
+
+# Lọc dữ liệu chưa lưu
+if max_datetime:
+    spark_datetime = datetime.strptime(str(max_datetime), "%Y-%m-%d %H:%M:%S.%f")
+    df = df.filter(col("datetime") > spark_datetime)
 
 # ==================== Dimension Tables ====================
 
