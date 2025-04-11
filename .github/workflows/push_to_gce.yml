@@ -1,0 +1,46 @@
+name: Push-to-GCE
+
+on:
+  push:
+    branches:
+      - main
+    # paths:
+    #   - "airflow/**"
+    #   - "spark/**"
+
+jobs:
+  deploy:
+    name: Deploy to GCE on push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the files
+        uses: actions/checkout@v2
+        
+      - name: Ensure rsync is installed on GCE
+        uses: appleboy/ssh-action@master
+        with:
+          host: 35.230.57.176
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            sudo apt-get update
+            sudo apt-get install -y rsync
+
+      - name: Deploy to GCE VM Instance
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.GCE_SSH_KEY }}
+          REMOTE_HOST: 35.230.57.176
+          REMOTE_USER: huybuile2004
+          TARGET: /home/huybuile2004
+
+      # - name: Execute remote SSH commands
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: 35.230.57.176
+      #     username: huybuile2004
+      #     key: ${{ secrets.GCE_SSH_KEY }}
+      #     script: |
+      #       cd /
+
