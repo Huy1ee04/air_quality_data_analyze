@@ -53,9 +53,8 @@ jobs:
           username: huybuile2004
           key: ${{ secrets.GCE_SSH_KEY }}
           script: |
-            echo "${{ secrets.GOOGLE_KEY }}" > /home/huybuile2004/airflow/google-key.json
-            echo "${{ secrets.GOOGLE_KEY }}" > /home/huybuile2004/spark/google-key.json
-
+            printf "%s" "${{ secrets.GOOGLE_KEY }}" > /home/huybuile2004/airflow/google-key.json
+            printf "%s" "${{ secrets.GOOGLE_KEY }}" > /home/huybuile2004/spark/google-key.json
 
       # - name: Execute remote SSH commands
       #   uses: appleboy/ssh-action@master
