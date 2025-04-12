@@ -13,7 +13,7 @@ load_dotenv()
 GCS_BUCKET = "project-bigdata-bucket"
 GCS_FOLDER = "air_quality_data/"
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-LOCAL_FILE_PATH = "/opt/airflow/dags/air_quality_data.json"
+LOCAL_FILE_PATH = "/opt/airflow/dags/ETL/air_quality_data.json"
 
 if not GOOGLE_APPLICATION_CREDENTIALS:
     raise ValueError("GOOGLE_APPLICATION_CREDENTIALS không được tìm thấy! Kiểm tra lại .env file.")

@@ -101,7 +101,7 @@ def fetch_air_quality_data():
 
             lon += step  # Luôn tăng giá trị lon, tránh vòng lặp vô tận
 
-            time.sleep(2)  # Tránh rate limit
+            time.sleep(0.2)  # Tránh rate limit
 
         lat += step  # Tăng lat sau khi quét xong 1 hàng
 
