@@ -35,6 +35,28 @@ jobs:
           REMOTE_USER: huybuile2004
           TARGET: /home/huybuile2004
 
+      - name: Create .env file on GCE
+        uses: appleboy/ssh-action@master
+        with:
+          host: 35.230.57.176
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" > /home/huybuile2004/airflow/.env
+            echo "GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/google-key.json" >> /home/huybuile2004/airflow/.env
+            echo "GOOGLE_APPLICATION_CREDENTIALS=/opt/spark/google-key.json" >> /home/huybuile2004/spark/.env
+
+      - name: Copy google-key.json to GCE
+        uses: appleboy/ssh-action@master
+        with:
+          host: 35.230.57.176
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            echo "${{ secrets.GOOGLE_KEY }}" > /home/huybuile2004/airflow/google-key.json
+            echo "${{ secrets.GOOGLE_KEY }}" > /home/huybuile2004/spark/google-key.json
+
+
       # - name: Execute remote SSH commands
       #   uses: appleboy/ssh-action@master
       #   with:
