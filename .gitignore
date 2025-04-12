@@ -19,12 +19,6 @@ Thumbs.db
 __pycache__/
 *.pyc
 
-# Ignore Airflow logs
-airflow/logs/
-
-# Ignore Python bytecode
-__pycache__/
-*.pyc
-
-# Ignore Airflow logs
-airflow/logs/
+# Ignore Airflow logs and __pycache__ 
+airflow/**/logs/
+airflow/**/__pycache__/
