@@ -14,7 +14,7 @@ lat_start, lat_end = 8.0,  23.5
 lon_start, lon_end = 102.0, 110.5
 step = 0.25  
 
-file_path = "/opt/airflow/dags/air_quality_data.json"
+file_path = "/opt/airflow/dags/ETL/air_quality_data.json"
 start_time_file = "/opt/airflow/start_time.txt"
 
 # Đọc thời gian bắt đầu từ file
@@ -71,7 +71,7 @@ def fetch_air_quality_data():
                             "dt": entry["dt"],
                             "lat": lat,
                             "lon": lon,
-                            "aqi": entry["main"]["aqi"],
+                            "aqi_level": entry["main"]["aqi"],
                             "co": entry["components"]["co"],
                             "no": entry["components"]["no"],
                             "no2": entry["components"]["no2"],

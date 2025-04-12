@@ -8,7 +8,7 @@ from ETL import load
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
-    "start_date": datetime(2025, 3, 22),
+    "start_date": datetime(2025, 4, 12),
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
 }
@@ -16,7 +16,7 @@ default_args = {
 dag = DAG(
     "air_quality_to_gcs",
     default_args=default_args,
-    schedule_interval= None,   # "5 12 * * *",  # Runs daily at 12:00 UTC (~19:00 VN)
+    schedule_interval= None,   # "5 0 * * 1",  # Runs weekly at Monday, 7:05 UTC+7
     catchup=False
 )
 

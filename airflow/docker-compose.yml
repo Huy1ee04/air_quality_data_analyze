@@ -38,13 +38,11 @@ services:
       interval: 10s
       retries: 5
       start_period: 5s
-    restart: always
 
   airflow-scheduler:
     <<: *airflow-common
     command: >
       bash -c "pip install -r /requirements.txt && airflow scheduler"
-    restart: always
     depends_on:
       postgres:
         condition: service_healthy

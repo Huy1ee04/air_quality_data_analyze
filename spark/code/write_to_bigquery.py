@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, avg, from_unixtime, hour, to_date, year, month, dayofmonth, monotonically_increasing_id
+from pyspark.sql.functions import col, avg, from_unixtime, hour, to_date, year, month, dayofmonth, monotonically_increasing_id,udf
+from pyspark.sql.types import DoubleType
 import os
 from dotenv import load_dotenv
 from google.cloud import bigquery
@@ -46,6 +47,29 @@ if max_datetime:
     spark_datetime = datetime.strptime(str(max_datetime), "%Y-%m-%d %H:%M:%S.%f")
     df = df.filter(col("datetime") > spark_datetime)
 
+# Tính AQI
+def calculate_aqi_pm25(concentration):
+    # Định nghĩa các khoảng nồng độ và AQI tương ứng
+    breakpoints = [
+        (0.0, 12.0, 0, 50),
+        (12.1, 35.4, 51, 100),
+        (35.5, 55.4, 101, 150),
+        (55.5, 150.4, 151, 200),
+        (150.5, 250.4, 201, 300),
+        (250.5, 350.4, 301, 400),
+        (350.5, 500.4, 401, 500)
+    ]
+    for bp_lo, bp_hi, i_lo, i_hi in breakpoints:
+        if bp_lo <= concentration <= bp_hi:
+            return ((i_hi - i_lo) / (bp_hi - bp_lo)) * (concentration - bp_lo) + i_lo
+    return None
+
+# Đăng ký UDF
+aqi_pm25_udf = udf(calculate_aqi_pm25, DoubleType())
+
+# Áp dụng UDF vào DataFrame
+df = df.withColumn("aqi", aqi_pm25_udf(df["pm2_5"]))
+
 # ==================== Dimension Tables ====================
 
 # dim_date: date + các thành phần thời gian
@@ -80,7 +104,8 @@ fact_air_quality = df_with_ids.select(
     "so2",
     "no2",
     "co",
-    "aqi"
+    "aqi",
+    "aqi_level",
 ).withColumn("fact_id", monotonically_increasing_id())
 
 # ===== Bảng mới: Trung bình các chỉ số theo ngày + tọa độ =====
