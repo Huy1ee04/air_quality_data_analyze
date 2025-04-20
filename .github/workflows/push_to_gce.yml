@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the files
+      - name: Check out the files
         uses: actions/checkout@v2
         
       - name: Ensure rsync is installed on GCE
@@ -27,15 +27,25 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y rsync
 
-      - name: Deploy to GCE VM Instance
+      - name: Deploy to GCE VM instance
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.GCE_SSH_KEY }}
           REMOTE_HOST: 35.230.57.176
           REMOTE_USER: huybuile2004
           TARGET: /home/huybuile2004
+          
+      - name: Copy service account from Github to GCE instance
+        uses: appleboy/ssh-action@master
+        with:
+          host: 35.230.57.176
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            printf "%s" "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" > /home/huybuile2004/airflow/google-key.json
+            printf "%s" "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" > /home/huybuile2004/spark/google-key.json
 
-      - name: Create .env file on GCE
+      - name: Create .env file on GCE instance
         uses: appleboy/ssh-action@master
         with:
           host: 35.230.57.176
@@ -43,25 +53,18 @@ jobs:
           key: ${{ secrets.GCE_SSH_KEY }}
           script: |
             echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" > /home/huybuile2004/airflow/.env
-            echo "GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/google-key.json" >> /home/huybuile2004/airflow/.env
-            echo "GOOGLE_APPLICATION_CREDENTIALS=/opt/spark/google-key.json" >> /home/huybuile2004/spark/.env
+            echo "GOOGLE_SERVICE_ACCOUNT_KEY=/opt/airflow/google-key.json" >> /home/huybuile2004/airflow/.env
+            echo "GOOGLE_SERVICE_ACCOUNT_KEY=/opt/spark/google-key.json" >> /home/huybuile2004/spark/.env
 
-      - name: Copy google-key.json to GCE
+      - name: Restart Airflow services
         uses: appleboy/ssh-action@master
         with:
           host: 35.230.57.176
           username: huybuile2004
           key: ${{ secrets.GCE_SSH_KEY }}
           script: |
-            printf "%s" "${{ secrets.GOOGLE_KEY }}" > /home/huybuile2004/airflow/google-key.json
-            printf "%s" "${{ secrets.GOOGLE_KEY }}" > /home/huybuile2004/spark/google-key.json
-
-      # - name: Execute remote SSH commands
-      #   uses: appleboy/ssh-action@master
-      #   with:
-      #     host: 35.230.57.176
-      #     username: huybuile2004
-      #     key: ${{ secrets.GCE_SSH_KEY }}
-      #     script: |
-      #       cd /
-
+            cd /home/huybuile2004/airflow
+            docker-compose down
+            docker-compose up -d
+            sleep 10
+            docker-compose ps | grep "healthy" || exit 1
