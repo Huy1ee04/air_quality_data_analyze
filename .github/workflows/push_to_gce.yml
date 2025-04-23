@@ -33,7 +33,7 @@ jobs:
           REMOTE_HOST: 35.230.57.176
           REMOTE_USER: huybuile2004
           TARGET: /home/huybuile2004
-          ARGS: "--delete"
+          ARGS: "--update --checksum"
           
       - name: Copy service account from Github to GCE instance
         uses: appleboy/ssh-action@master
