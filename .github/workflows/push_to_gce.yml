@@ -27,14 +27,40 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y rsync
 
-      - name: Deploy to GCE VM instance
-        uses: easingthemes/ssh-deploy@main
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.GCE_SSH_KEY }}
-          REMOTE_HOST: 35.230.57.176
-          REMOTE_USER: huybuile2004
-          TARGET: /home/huybuile2004
-          ARGS: "--update --checksum"
+      # - name: Deploy to GCE VM instance
+      #   uses: easingthemes/ssh-deploy@main
+      #   env:
+      #     SSH_PRIVATE_KEY: ${{ secrets.GCE_SSH_KEY }}
+      #     REMOTE_HOST: 35.230.57.176
+      #     REMOTE_USER: huybuile2004
+      #     TARGET: /home/huybuile2004
+      #     ARGS: "--update --checksum"
+
+      - name: Clone repo to GCE if not already present
+        uses: appleboy/ssh-action@master
+        with:
+          host: 35.230.57.176
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            if [ ! -d "/home/huybuile2004/air_quality_data_analyze/.git" ]; then
+              echo "Cloning repository..."
+              git clone https://github.com/Huy1ee04/air_quality_data_analyze.git /home/huybuile2004/air_quality_data_analyze
+            else
+              echo "Repository already exists."
+            fi
+
+      - name: Update code from GitHub repo
+        uses: appleboy/ssh-action@master
+        with:
+          host: 35.230.57.176
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            cd /home/huybuile2004/air_quality_data_analyze
+            git reset --hard
+            git clean -fd
+            git pull origin main
           
       - name: Copy service account from Github to GCE instance
         uses: appleboy/ssh-action@master
