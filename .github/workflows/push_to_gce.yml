@@ -69,9 +69,10 @@ jobs:
           username: huybuile2004
           key: ${{ secrets.GCE_SSH_KEY }}
           script: |
-            printf "%s" "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" > /home/huybuile2004/air_quality_data_analyze/airflow/google-key.json
-            printf "%s" "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" > /home/huybuile2004/air_quality_data_analyze/spark/google-key.json
-
+            echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" | base64 -w 0 > /home/huybuile2004/encoded_key.txt
+            base64 -d /home/huybuile2004/encoded_key.txt > /home/huybuile2004/air_quality_data_analyze/airflow/google-key.json
+            base64 -d /home/huybuile2004/encoded_key.txt > /home/huybuile2004/air_quality_data_analyze/spark/google-key.json
+            
       - name: Create .env file on GCE instance
         uses: appleboy/ssh-action@master
         with:
