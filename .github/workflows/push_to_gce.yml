@@ -83,15 +83,15 @@ jobs:
             echo "GOOGLE_SERVICE_ACCOUNT_KEY=/opt/airflow/google-key.json" >> /home/huybuile2004/air_quality_data_analyze/airflow/.env
             echo "GOOGLE_SERVICE_ACCOUNT_KEY=/opt/spark/google-key.json" >> /home/huybuile2004/air_quality_data_analyze/spark/.env
 
-      - name: Restart Airflow services
-        uses: appleboy/ssh-action@master
-        with:
-          host: 35.230.57.176
-          username: huybuile2004
-          key: ${{ secrets.GCE_SSH_KEY }}
-          script: |
-            cd /home/huybuile2004/air_quality_data_analyze/airflow
-            docker-compose down
-            docker-compose up -d
-            sleep 10
-            docker-compose ps | grep "healthy" || exit 1
+      # - name: Restart Airflow services
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: 35.230.57.176
+      #     username: huybuile2004
+      #     key: ${{ secrets.GCE_SSH_KEY }}
+      #     script: |
+      #       cd /home/huybuile2004/air_quality_data_analyze/airflow
+      #       docker compose down
+      #       docker compose up -d
+      #       sleep 5
+      #       docker-compose ps | grep "healthy" || exit 1
