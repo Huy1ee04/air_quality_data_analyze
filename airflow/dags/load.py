@@ -16,7 +16,7 @@ GOOGLE_SERVICE_ACCOUNT_KEY = os.getenv("GOOGLE_SERVICE_ACCOUNT_KEY")
 LOCAL_FILE_PATH = "/opt/airflow/dags/air_quality_data.json"
 
 if not GOOGLE_SERVICE_ACCOUNT_KEY:
-    raise ValueError("GOOGLE_SERVICE_ACCOUNT_KEY không được tìm thấy! Kiểm tra lại .env file.")
+    raise ValueError("GOOGLE_SERVICE_ACCOUNT_KEY không được tìm thấy! Kiểm tra lại file .env")
 
 # Set Google Application Credentials
 os.environ["GOOGLE_SERVICE_ACCOUNT_KEY"] = GOOGLE_SERVICE_ACCOUNT_KEY

@@ -1,8 +1,8 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-from airflow.dags import extract
-from airflow.dags import load
+import extract
+import load
 
 # DAG Configuration
 default_args = {
@@ -23,14 +23,14 @@ dag = DAG(
 task_fetch_data = PythonOperator(
     task_id="fetch_air_quality_data",
     python_callable=extract.fetch_air_quality_data,
-    dag=dag
+    dag=dag,
     on_failure_callback=lambda context: print("Fetch data failed!")
 )
 
 task_upload_gcs = PythonOperator(
     task_id="upload_to_gcs",
     python_callable=load.upload_to_gcs,
-    dag=dag
+    dag=dag,
     on_failure_callback=lambda context: print("Upload to GCS failed!")
 )
 
