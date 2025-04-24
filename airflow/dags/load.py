@@ -72,5 +72,3 @@ def upload_to_gcs():
         raise RuntimeError(f"Error uploading data to GCS: {e}")
     
     print(f"Dữ liệu đã được tải lên GCS dưới dạng phân vùng Parquet tại gs://{GCS_BUCKET}/{GCS_FOLDER}")
-
-upload_to_gcs()
