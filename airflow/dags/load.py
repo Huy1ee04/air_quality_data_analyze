@@ -19,7 +19,7 @@ if not GOOGLE_SERVICE_ACCOUNT_KEY:
     raise ValueError("GOOGLE_SERVICE_ACCOUNT_KEY không được tìm thấy! Kiểm tra lại file .env")
 
 # Set Google Application Credentials
-os.environ["GOOGLE_SERVICE_ACCOUNT_KEY"] = GOOGLE_SERVICE_ACCOUNT_KEY
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_SERVICE_ACCOUNT_KEY
 
 # Initialize GCS Client
 storage_client = storage.Client()

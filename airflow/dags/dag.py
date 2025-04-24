@@ -16,7 +16,7 @@ default_args = {
 dag = DAG(
     "air_quality_to_gcs",
     default_args=default_args,
-    schedule_interval= "5 0 * * 1",  # Runs weekly at Monday, 7:05 UTC+7
+    schedule_interval= "30 15 * * 4", #"5 0 * * 1",  # Runs weekly at Monday, 7:05 UTC+7
     catchup=False
 )
 
