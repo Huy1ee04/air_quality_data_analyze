@@ -21,13 +21,19 @@ if not GOOGLE_APPLICATION_CREDENTIALS:
 KAFKA_ADDRESS = os.getenv('KAFKA_ADDRESS')
 kafka_bootstrap_servers = f"{KAFKA_ADDRESS}:{os.getenv('BROKER1')},{KAFKA_ADDRESS}:{os.getenv('BROKER2')}"  # Cấu hình Kafka
 kafka_topic = os.getenv('AQI_TOPIC')
-bq_table = "your_project_id.dataset.aqi_table"
+bq_table = os.getenv('BQ_TABLE')
 gcp_project_id = os.getenv('PROJECT_ID')
+gcs_bucket = os.getenv('GCS_BUCKET')
 
 def create_spark_session(app_name="AQIConsumer"):
     return SparkSession.builder \
-        .appName(app_name) \
-        .getOrCreate()
+    .appName(app_name) \
+    .config("spark.hadoop.fs.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem") \
+    .config("spark.hadoop.google.cloud.auth.service.account.enable", "true") \
+    .config("spark.jars", "/opt/bitnami/spark/jars/gcs-connector-hadoop3-latest.jar, /opt/bitnami/spark/jars/spark-bigquery-with-dependencies_2.12-0.36.1.jar") \
+    .config("spark.hadoop.google.cloud.auth.service.account.json.keyfile", GOOGLE_APPLICATION_CREDENTIALS) \
+    .config("spark.hadoop.google.cloud.project.id", gcp_project_id) \
+    .getOrCreate()
 
 def define_schema():
     return StructType() \
@@ -38,8 +44,8 @@ def define_schema():
         .add("time", StringType()) \
         .add("station", StringType())
 
-def process_and_write_to_bq(spark, kafka_bootstrap_servers, kafka_topic, bq_table, gcp_project_id):
-    df = spark.readStream \
+def process_and_write_to_bq(spark_session):
+    df = spark_session.readStream \
         .format("kafka") \
         .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
         .option("subscribe", kafka_topic) \
@@ -59,11 +65,11 @@ def process_and_write_to_bq(spark, kafka_bootstrap_servers, kafka_topic, bq_tabl
         .format("bigquery") \
         .option("table", bq_table) \
         .option("checkpointLocation", "/tmp/aqi_bq_checkpoint") \
-        .option("temporaryGcsBucket", "your-temp-gcs-bucket") \
+        .option("temporaryGcsBucket", gcs_bucket ) \
         .outputMode("append") \
         .start()
 
     query.awaitTermination()
 
-spark = create_spark_session()
-process_and_write_to_bq(spark, kafka_bootstrap_servers, kafka_topic, bq_table, gcp_project_id)
+spark_session = create_spark_session()
+process_and_write_to_bq(spark_session)

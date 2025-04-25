@@ -3,7 +3,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 import time
 from dotenv import load_dotenv
-from producer import producer_instance
+from producer_instance import producer_instance
 import datetime
 import threading
 load_dotenv()

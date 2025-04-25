@@ -9,10 +9,8 @@ import requests
 from time import sleep
 from typing import Dict, List, Tuple
 from kafka import KafkaAdminClient, KafkaProducer
-from kafka.admin.new_partitions import NewPartitions
 from kafka.errors import TopicAlreadyExistsError
 from kafka.admin import NewTopic
-from producer import WeatherProducer,delivery_report
 import os
 from dotenv import load_dotenv
 
@@ -106,7 +104,7 @@ def producer_instance(topic, kafka_address,broker,producer_name,region):
         existing_topics = client.list_topics()
         if topic not in existing_topics:
             try:
-                client.create_topics([NewTopic(name=topic, num_partitions=4, replication_factor=1)])
+                client.create_topics([NewTopic(name=topic, num_partitions=4, replication_factor=2)])
                 print(f"Topic '{topic}' created successfully.")
             except TopicAlreadyExistsError:
                 print(f"Topic '{topic}' already exists.")
