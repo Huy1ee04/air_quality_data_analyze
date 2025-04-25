@@ -19,7 +19,7 @@ x-airflow-common: &airflow-common
     - ${AIRFLOW_PROJ_DIR:-.}/google-key.json:/opt/airflow/google-key.json:rw
     - ${AIRFLOW_PROJ_DIR:-.}/start_time.txt:/opt/airflow/start_time.txt:rw
     - /var/run/docker.sock:/var/run/docker.sock:rw
-  user: "0:0"  # Run as root user (UID 0) to give all users permission to write
+  user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     postgres:
       condition: service_healthy
