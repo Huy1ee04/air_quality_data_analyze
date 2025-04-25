@@ -38,67 +38,68 @@ def write_new_start_time(end_time):
         f.write(str(end_time))
 
 def fetch_air_quality_data():
-    all_data = []
     current_unix_time = int(time.time())
     end_time = current_unix_time  
 
     lat = lat_start
-    while lat <= lat_end:
-        lon = lon_start
-        while lon <= lon_end:
-            print(f"Fetching data for lat={lat}, lon={lon}...")
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write("[")  # mở list JSON
 
-            params = {
-                "lat": lat,
-                "lon": lon,
-                "start": read_start_time(),
-                "end": end_time,
-                "appid": API_KEY
-            }
+        first = True
+        while lat <= lat_end:
+            lon = lon_start
+            while lon <= lon_end:
+                print(f"Fetching data for lat={lat}, lon={lon}...")
 
-            response = requests.get(BASE_URL, params=params)
+                params = {
+                    "lat": lat,
+                    "lon": lon,
+                    "start": read_start_time(),
+                    "end": end_time,
+                    "appid": API_KEY
+                }
 
-            if response.status_code == 200:
-                data = response.json()
-                if "list" in data and data["list"]:
-                    for entry in data["list"]:
-                        record = {
-                            "dt": entry["dt"],
-                            "lat": lat,
-                            "lon": lon,
-                            "aqi_level": entry["main"]["aqi"],
-                            "co": entry["components"]["co"],
-                            "no": entry["components"]["no"],
-                            "no2": entry["components"]["no2"],
-                            "o3": entry["components"]["o3"],
-                            "so2": entry["components"]["so2"],
-                            "pm2_5": entry["components"]["pm2_5"],
-                            "pm10": entry["components"]["pm10"],
-                            "nh3": entry["components"]["nh3"]
-                        }
-                        all_data.append(record)
+                response = requests.get(BASE_URL, params=params)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if "list" in data and data["list"]:
+                        for entry in data["list"]:
+                            record = {
+                                "dt": entry["dt"],
+                                "lat": lat,
+                                "lon": lon,
+                                "aqi_level": entry["main"]["aqi"],
+                                "co": entry["components"]["co"],
+                                "no": entry["components"]["no"],
+                                "no2": entry["components"]["no2"],
+                                "o3": entry["components"]["o3"],
+                                "so2": entry["components"]["so2"],
+                                "pm2_5": entry["components"]["pm2_5"],
+                                "pm10": entry["components"]["pm10"],
+                                "nh3": entry["components"]["nh3"]
+                            }
+                            if not first:
+                                f.write(",\n")
+                            f.write(json.dumps(record, ensure_ascii=False))
+                            first = False
+                    else:
+                        print(f"No valid data for lat={lat}, lon={lon}")
+                elif response.status_code == 429:
+                    retry_after = int(response.headers.get("Retry-After", 60))
+                    print(f"Rate limit exceeded. Sleeping for {retry_after} seconds...")
+                    time.sleep(retry_after)
+                    continue
                 else:
-                    print(f"No valid data for lat={lat}, lon={lon}")
-            elif response.status_code == 429:
-                retry_after = int(response.headers.get("Retry-After", 60))
-                print(f"Rate limit exceeded. Sleeping for {retry_after} seconds...")
-                time.sleep(retry_after)
-                continue
-            else:
-                print(f"Failed to fetch data: {response.status_code}")
-                print(f"Response: {response.text}")
+                    print(f"Failed to fetch data: {response.status_code}")
+                    print(f"Response: {response.text}")
 
-            lon += step
-            time.sleep(0.5)
+                lon += step
+                time.sleep(0.5)
+            lat += step
 
-        lat += step
-
-    try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(all_data, f, ensure_ascii=False, indent=4)
-        print(f"All data saved to {file_path}")
-    except IOError as e:
-        print(f"Error writing to file {file_path}: {e}")
+        f.write("]")  # đóng list JSON
 
     write_new_start_time(end_time)
+    print(f"Data written incrementally to {file_path}")
     print(f"New start time saved: {end_time}")
