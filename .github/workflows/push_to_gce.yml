@@ -58,6 +58,7 @@ jobs:
           key: ${{ secrets.GCE_SSH_KEY }}
           script: |
             cd /home/huybuile2004/air_quality_data_analyze
+            sudo chown -R huybuile2004:huybuile2004 /home/huybuile2004/air_quality_data_analyze
             git reset --hard
             git clean -fd
             git pull origin main
