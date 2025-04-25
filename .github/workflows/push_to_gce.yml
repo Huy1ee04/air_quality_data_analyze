@@ -84,6 +84,16 @@ jobs:
             echo "GOOGLE_SERVICE_ACCOUNT_KEY=/opt/airflow/google-key.json" >> /home/huybuile2004/air_quality_data_analyze/airflow/.env
             echo "GOOGLE_SERVICE_ACCOUNT_KEY=/opt/spark/google-key.json" >> /home/huybuile2004/air_quality_data_analyze/spark/.env
 
+      - name: Fix file permissions for airflow user
+        uses: appleboy/ssh-action@master
+        with:
+          host: 35.230.57.176
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            sudo chown -R 50000:0 /home/huybuile2004/air_quality_data_analyze/airflow
+
+
       # - name: Restart Airflow services
       #   uses: appleboy/ssh-action@master
       #   with:
