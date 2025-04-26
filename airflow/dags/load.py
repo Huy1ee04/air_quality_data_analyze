@@ -34,6 +34,11 @@ def upload_large_json_to_gcs(batch_size=25000):
         
         if "dt" not in df.columns:
             raise KeyError("Không tìm thấy cột 'dt'.")
+        
+        float_columns = ["co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3"]
+        for col in float_columns:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').astype('float64').round(2)
 
         df["dt"] = pd.to_datetime(df["dt"], unit="s", errors='coerce')
         df["year"] = df["dt"].dt.year
