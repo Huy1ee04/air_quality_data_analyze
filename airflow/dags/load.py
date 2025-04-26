@@ -70,5 +70,3 @@ def upload_large_json_to_gcs(batch_size=25000):
             write_batch_to_gcs(batch, count)
 
     print(f"🎉 Hoàn tất tải dữ liệu lên GCS theo từng batch Parquet!")
-
-upload_large_json_to_gcs()

@@ -29,7 +29,7 @@ task_fetch_data = PythonOperator(
 
 task_upload_gcs = PythonOperator(
     task_id="upload_to_gcs",
-    python_callable=load.upload_to_gcs,
+    python_callable=load.upload_large_json_to_gcs,
     dag=dag,
     on_failure_callback=lambda context: print("Upload to GCS failed!")
 )
