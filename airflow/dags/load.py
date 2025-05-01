@@ -44,20 +44,19 @@ def upload_large_json_to_gcs(batch_size=25000):
         df["year"] = df["dt"].dt.year
         df["month"] = df["dt"].dt.month
         df["day"] = df["dt"].dt.day
-        df["dt"] = df["dt"].astype('int64') // 1_000_000_000  # convert back to int timestamp
+        df["dt"] = df["dt"].astype('int64') // 1_000_000_000
 
-        table = pa.Table.from_pandas(df)
+        # Ghi từng nhóm partition theo ngày riêng
+        grouped = df.groupby(["year", "month", "day"])
 
-        try:
-            pq.write_to_dataset(
-                table,
-                root_path=f"{GCS_BUCKET}/{GCS_FOLDER}",
-                partition_cols=["year", "month", "day"],
-                filesystem=gcs
-            )
-            print(f"✅ Batch {batch_num}: Đã ghi {len(batch)} bản ghi lên GCS")
-        except Exception as e:
-            raise RuntimeError(f"❌ Lỗi ghi batch {batch_num}: {e}")
+        for (year, month, day), group_df in grouped:
+            table = pa.Table.from_pandas(group_df)
+            partition_path = f"{GCS_FOLDER}/year={year}/month={month}/day={day}/batch_{batch_num}.parquet"
+
+            with gcs.open_output_stream(f"{GCS_BUCKET}/{partition_path}") as out_stream:
+                pq.write_table(table, out_stream)
+
+            print(f"✅ Batch {batch_num}: Đã ghi {len(group_df)} bản ghi vào {partition_path}")
 
     with open(LOCAL_FILE_PATH, "r", encoding="utf-8") as f:
         parser = ijson.items(f, "item")
