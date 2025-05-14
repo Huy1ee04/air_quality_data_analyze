@@ -3,6 +3,7 @@ import json
 import time
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 # Load API key từ .env
 load_dotenv()
@@ -38,8 +39,21 @@ def write_new_start_time(end_time):
         f.write(str(end_time))
 
 def fetch_air_quality_data():
+    # Lấy thời gian hiện tại
     current_unix_time = int(time.time())
-    end_time = current_unix_time  
+
+    # Chuyển thành datetime
+    current_dt = datetime.fromtimestamp(current_unix_time)
+
+    # Lấy 23h00 cùng ngày
+    end_of_day = current_dt.replace(hour=23, minute=0, second=0, microsecond=0)
+
+    # Nếu thời gian hiện tại đã quá 23h thì dùng hôm nay, còn nếu chưa thì dùng hôm trước
+    if current_dt.hour < 23:
+        end_of_day = end_of_day - timedelta(days=1)
+
+    # Chuyển về UNIX timestamp
+    end_time = int(end_of_day.timestamp())
 
     lat = lat_start
     with open(file_path, "w", encoding="utf-8") as f:

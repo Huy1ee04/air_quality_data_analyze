@@ -31,14 +31,6 @@ bucket = storage_client.bucket(GCS_BUCKET)
 def upload_large_json_to_gcs(batch_size=25000):
     def write_batch_to_gcs(batch, batch_num):
         df = pd.DataFrame(batch)
-        
-        if "dt" not in df.columns:
-            raise KeyError("Không tìm thấy cột 'dt'.")
-        
-        float_columns = ["co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3"]
-        for col in float_columns:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce').astype('float64').round(2)
 
         df["dt"] = pd.to_datetime(df["dt"], unit="s", errors='coerce')
         df["year"] = df["dt"].dt.year
@@ -49,8 +41,28 @@ def upload_large_json_to_gcs(batch_size=25000):
         # Ghi từng nhóm partition theo ngày riêng
         grouped = df.groupby(["year", "month", "day"])
 
+        # Define consistent schema
+        schema = pa.schema([
+            ("dt", pa.int64()),
+            ("lat", pa.float64()),
+            ("lon", pa.float64()),
+            ("co", pa.float64()),
+            ("no", pa.float64()),
+            ("no2", pa.float64()),
+            ("o3", pa.float64()),
+            ("so2", pa.float64()),
+            ("pm2_5", pa.float64()),
+            ("pm10", pa.float64()),
+            ("nh3", pa.float64()),
+            ("aqi_level", pa.string()),
+            # add other fields if needed
+        ])
+
         for (year, month, day), group_df in grouped:
-            table = pa.Table.from_pandas(group_df)
+            # Bỏ 3 trường phân vùng khỏi DataFrame
+            group_df = group_df.drop(columns=["year", "month", "day"])
+
+            table = pa.Table.from_pandas(group_df, schema=schema, preserve_index=False)
             partition_path = f"{GCS_FOLDER}/year={year}/month={month}/day={day}/batch_{batch_num}.parquet"
 
             with gcs.open_output_stream(f"{GCS_BUCKET}/{partition_path}") as out_stream:

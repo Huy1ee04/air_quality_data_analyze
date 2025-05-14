@@ -1,0 +1,7 @@
+google-cloud-bigquery
+google-cloud-storage
+dotenv
+datetime
+pyarrow
+pandas
+gcsfs
