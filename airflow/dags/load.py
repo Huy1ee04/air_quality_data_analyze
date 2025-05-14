@@ -59,7 +59,7 @@ def upload_large_json_to_gcs(batch_size=25000):
             ("pm2_5", pa.float64()),
             ("pm10", pa.float64()),
             ("nh3", pa.float64()),
-            ("aqi_level", pa.string()),
+            ("aqi_level", pa.int64()),
             # add other fields if needed
         ])
 
