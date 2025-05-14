@@ -38,6 +38,11 @@ def upload_large_json_to_gcs(batch_size=25000):
         df["day"] = df["dt"].dt.day
         df["dt"] = df["dt"].astype('int64') // 1_000_000_000
 
+        float_columns = ["co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3", "lat", "lon"]
+        for col in float_columns:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').astype(float).round(2)
+
         # Ghi từng nhóm partition theo ngày riêng
         grouped = df.groupby(["year", "month", "day"])
 
