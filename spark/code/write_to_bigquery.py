@@ -54,6 +54,39 @@ folder_paths = sorted(folders)
 print(f"✅ Tìm được {len(folder_paths)} ngày dữ liệu phân vùng.")
 
 
+full_path = f"gs://project-bigdata-bucket/{folder_paths[0]}"
+print(f"🚀 Đang đọc dữ liệu: {full_path}")
+
+df_all = spark.read.parquet(full_path)
+
+df_all = df_all.withColumn("date", to_date(from_unixtime(col("dt")))) \
+        # .withColumn("lat", (spark_round(col("lat") / 0.25) * 0.25)) \
+        # .withColumn("lon", (spark_round(col("lon") / 0.25) * 0.25)) 
+
+dim_date = df_all.select("date").distinct() \
+    .withColumn("year", year("date")) \
+    .withColumn("month", month("date")) \
+    .withColumn("day", dayofmonth("date")) \
+    .withColumn("date_id", (col("year")*10000 + col("month")*100 + col("day")).cast("long"))
+
+dim_location = df_all.select("lat", "lon").distinct() \
+    .withColumn("location_id", hash("lat", "lon"))
+
+# ✅ Ghi dim_date và dim_location 1 lần duy nhất
+dim_date.write.format("bigquery") \
+    .option("table", "iron-envelope-455716-g8.aq_data.dim_date") \
+    .option("parentProject", "iron-envelope-455716-g8") \
+    .option("temporaryGcsBucket", "project-bigdata-bucket") \
+    .mode("append") \
+    .save()
+
+dim_location.write.format("bigquery") \
+    .option("table", "iron-envelope-455716-g8.aq_data.dim_location") \
+    .option("parentProject", "iron-envelope-455716-g8") \
+    .option("temporaryGcsBucket", "project-bigdata-bucket") \
+    .mode("append") \
+    .save()
+
 for folder in folder_paths:
     full_path = f"gs://project-bigdata-bucket/{folder}"
     print(f"🚀 Đang xử lý phân vùng: {full_path}")
@@ -62,10 +95,8 @@ for folder in folder_paths:
     df = spark.read.parquet(full_path)
 
     # Tiền xử lý dữ liệu
-    df = df.withColumn("date", to_date(col("dt"))) \
-           .withColumn("hour", hour(col("date"))) \
-           .withColumn("lat", (spark_round(col("lat") / 0.25) * 0.25)) \
-           .withColumn("lon", (spark_round(col("lon") / 0.25) * 0.25)) \
+    df = df.withColumn("date", to_date(from_unixtime(col("dt")))) \
+           .withColumn("hour", hour(from_unixtime(col("dt")))) \
 
     # AQI UDF
     def calculate_aqi_pm25(concentration):
@@ -87,17 +118,6 @@ for folder in folder_paths:
     aqi_pm25_udf = udf(calculate_aqi_pm25, DoubleType())
     df = df.withColumn("aqi", aqi_pm25_udf(df["pm2_5"]))
 
-    # ========== Dimension Tables ==========
-    dim_date = df.select("date") \
-        .distinct() \
-        .withColumn("year", year("date")) \
-        .withColumn("month", month("date")) \
-        .withColumn("day", dayofmonth("date")) \
-        .withColumn("date_id", (col("year")*10000 + col("month")*100 + col("day")).cast("long"))
-
-    dim_location = df.select("lat", "lon") \
-        .distinct() \
-        .withColumn("location_id", hash("lat", "lon"))
 
     # ========== Fact Table ==========
     df_with_date_id = df.join(dim_date, on="date", how="left")
@@ -135,20 +155,6 @@ for folder in folder_paths:
     # daily_avg_aqi_df.write.mode("overwrite").parquet("gs://project-bigdata-bucket/star/daily_avg_aqi")
 
     # ==================== Ghi ra BigQuery ====================
-    dim_date.write.format("bigquery") \
-        .option("table", "iron-envelope-455716-g8.aq_data.dim_date") \
-        .option("parentProject", "iron-envelope-455716-g8") \
-        .option("temporaryGcsBucket", "project-bigdata-bucket") \
-        .mode("append") \
-        .save()
-
-    dim_location.write.format("bigquery") \
-        .option("table", "iron-envelope-455716-g8.aq_data.dim_location") \
-        .option("parentProject", "iron-envelope-455716-g8") \
-        .option("temporaryGcsBucket", "project-bigdata-bucket") \
-        .mode("append") \
-        .save()
-
     fact_air_quality.write.format("bigquery") \
         .option("table", "iron-envelope-455716-g8.aq_data.fact_air_quality") \
         .option("parentProject", "iron-envelope-455716-g8") \
