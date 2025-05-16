@@ -39,7 +39,7 @@ def producer_2():
                 kafka_address=kafka_address, 
                 broker=broker2, 
                 producer_name="producer2", 
-                region=[8, 102, 16, 110]
+                region=[16, 102, 23, 110]
             )
         except Exception as e:
             print(f"Error in producer2: {e}")

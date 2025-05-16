@@ -29,7 +29,7 @@ def create_spark_session(app_name="AQIConsumer"):
         .appName(app_name) \
         .config("spark.hadoop.fs.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem") \
         .config("spark.hadoop.google.cloud.auth.service.account.enable", "true") \
-        .config("spark.jars", "/Users/buihung/project bigdata/kafka/jars/spark-3.5-bigquery-0.42.1.jar, /Users/buihung/project bigdata/kafka/jars/kafka-clients-3.5.1.jar, /Users/buihung/project bigdata/kafka/jars/spark-sql-kafka-0-10_2.12-3.5.5.jar, /Users/buihung/project bigdata/kafka/jars/spark-token-provider-kafka-0-10_2.12-3.5.5.jar") \
+        .config("spark.jars", "/Users/buihung/project bigdata/kafka/jars/gcs-connector-hadoop3-latest.jar, /Users/buihung/project bigdata/kafka/jars/commons-pool2-2.11.1.jar, /Users/buihung/project bigdata/kafka/jars/spark-3.5-bigquery-0.42.1.jar, /Users/buihung/project bigdata/kafka/jars/kafka-clients-3.5.1.jar, /Users/buihung/project bigdata/kafka/jars/spark-sql-kafka-0-10_2.12-3.5.5.jar, /Users/buihung/project bigdata/kafka/jars/spark-token-provider-kafka-0-10_2.12-3.5.5.jar") \
         .config("spark.hadoop.google.cloud.auth.service.account.json.keyfile", GOOGLE_APPLICATION_CREDENTIALS) \
         .config("spark.hadoop.google.cloud.project.id", gcp_project_id) \
         .getOrCreate()
@@ -62,6 +62,16 @@ def process_and_write_to_bq(spark_session):
         .option("subscribe", kafka_topic) \
         .option("startingOffsets", "latest") \
         .load()
+
+    # df = spark_session.read \
+    # .format("kafka") \
+    # .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
+    # .option("subscribe", kafka_topic) \
+    # .option("startingOffsets", "earliest") \
+    # .option("endingOffsets", "latest") \
+    # .load()
+
+    # df.selectExpr("CAST(value AS STRING)").show(n=500, truncate=False)
 
     value_df = df.selectExpr("CAST(value AS STRING) as json_str")
 
