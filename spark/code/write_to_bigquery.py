@@ -59,27 +59,10 @@ print(f"🚀 Đang đọc dữ liệu: {full_path}")
 
 df_all = spark.read.parquet(full_path)
 
-df_all = df_all.withColumn("date", to_date(from_unixtime(col("dt")))) \
-        # .withColumn("lat", (spark_round(col("lat") / 0.25) * 0.25)) \
-        # .withColumn("lon", (spark_round(col("lon") / 0.25) * 0.25)) 
-
-dim_date = df_all.select("date").distinct() \
-    .withColumn("year", year("date")) \
-    .withColumn("month", month("date")) \
-    .withColumn("day", dayofmonth("date")) \
-    .withColumn("date_id", (col("year")*10000 + col("month")*100 + col("day")).cast("long"))
-
 dim_location = df_all.select("lat", "lon").distinct() \
     .withColumn("location_id", hash("lat", "lon"))
 
-# ✅ Ghi dim_date và dim_location 1 lần duy nhất
-dim_date.write.format("bigquery") \
-    .option("table", "iron-envelope-455716-g8.aq_data.dim_date") \
-    .option("parentProject", "iron-envelope-455716-g8") \
-    .option("temporaryGcsBucket", "project-bigdata-bucket") \
-    .mode("append") \
-    .save()
-
+# ✅ Ghi dim_location 1 lần duy nhất
 dim_location.write.format("bigquery") \
     .option("table", "iron-envelope-455716-g8.aq_data.dim_location") \
     .option("parentProject", "iron-envelope-455716-g8") \
@@ -97,6 +80,12 @@ for folder in folder_paths:
     # Tiền xử lý dữ liệu
     df = df.withColumn("date", to_date(from_unixtime(col("dt")))) \
            .withColumn("hour", hour(from_unixtime(col("dt")))) \
+
+    dim_date = df.select("date").distinct() \
+        .withColumn("year", year("date")) \
+        .withColumn("month", month("date")) \
+        .withColumn("day", dayofmonth("date")) \
+        .withColumn("date_id", (col("year")*10000 + col("month")*100 + col("day")).cast("long"))
 
     # AQI UDF
     def calculate_aqi_pm25(concentration):
@@ -122,6 +111,14 @@ for folder in folder_paths:
     # ========== Fact Table ==========
     df_with_date_id = df.join(dim_date, on="date", how="left")
     df_with_ids = df_with_date_id.join(dim_location, on=["lat", "lon"], how="left")
+
+    # ✅ Ghi dim_date và dim_location 1 lần duy nhất
+    dim_date.write.format("bigquery") \
+        .option("table", "iron-envelope-455716-g8.aq_data.dim_date") \
+        .option("parentProject", "iron-envelope-455716-g8") \
+        .option("temporaryGcsBucket", "project-bigdata-bucket") \
+        .mode("append") \
+        .save()
 
     fact_air_quality = df_with_ids.select(
         "date_id", "hour", "location_id", "pm2_5", "pm10", "o3", "so2", "no2", "co", "aqi", "aqi_level"
