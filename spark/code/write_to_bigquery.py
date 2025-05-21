@@ -70,7 +70,7 @@ dim_location.write.format("bigquery") \
     .mode("append") \
     .save()
 
-for folder in folder_paths:
+for folder in folder_paths[::-1]:
     full_path = f"gs://project-bigdata-bucket/{folder}"
     print(f"🚀 Đang xử lý phân vùng: {full_path}")
 
