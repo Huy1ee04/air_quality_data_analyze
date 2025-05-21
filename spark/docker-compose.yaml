@@ -19,7 +19,7 @@ services:
   spark-worker-driver:
     image: bitnami/spark:latest
     container_name: spark-worker-driver
-    user: "1000:1000"  # <== Gán user có HOME hợp lệ để tránh lỗi Ivy
+    user: root  # <== Gán user có HOME hợp lệ để tránh lỗi Ivy
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
@@ -46,7 +46,7 @@ services:
   spark-worker-2:
     image: bitnami/spark:latest
     container_name: spark-worker-2
-    user: "1000:1000"
+    user: root
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
@@ -65,7 +65,7 @@ services:
   spark-worker-3:
     image: bitnami/spark:latest
     container_name: spark-worker-3
-    user: "1000:1000"
+    user: root
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
