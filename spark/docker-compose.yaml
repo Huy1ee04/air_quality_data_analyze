@@ -19,36 +19,40 @@ services:
   spark-worker-driver:
     image: bitnami/spark:latest
     container_name: spark-worker-driver
+    user: "1000:1000"  # <== Gán user có HOME hợp lệ để tránh lỗi Ivy
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKER_CORES=2
       - SPARK_WORKER_MEMORY=2G
+      - HOME=/tmp  # <== Đảm bảo thư mục HOME hợp lệ để tránh lỗi spark-submit
     networks:
       - spark-network
     volumes:
-      - ./code:/opt/spark/work-dir  # Mount code into the container
-      - ./.env:/opt/spark/.env  # Mount environment variables
-      - ./google-key.json:/opt/spark/google-key.json  # Mount Google key
-      - ./requirements.txt:/opt/spark/requirements.txt  # Mount requirements
-      - ./start_date.txt:/opt/spark/start_date.txt  # Mount start date
+      - ./code:/opt/spark/work-dir
+      - ./.env:/opt/spark/.env
+      - ./google-key.json:/opt/spark/google-key.json
+      - ./requirements.txt:/opt/spark/requirements.txt
+      - ./start_date.txt:/opt/spark/start_date.txt
       - ./jars/gcs-connector-hadoop3-latest.jar:/opt/bitnami/spark/jars/gcs-connector-hadoop3-latest.jar
       - ./jars/spark-bigquery-with-dependencies_2.12-0.36.1.jar:/opt/bitnami/spark/jars/spark-bigquery-with-dependencies_2.12-0.36.1.jar
     command: ["/bin/bash", "-c", "pip install -r /opt/spark/requirements.txt && spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"]
     depends_on:
       - spark-master
     ports:
-      - "4040:4040"  # Spark job UI for driver node
+      - "4040:4040"
 
-  # Spark Worker node 2
+  # Spark Worker 2
   spark-worker-2:
     image: bitnami/spark:latest
     container_name: spark-worker-2
+    user: "1000:1000"
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKER_CORES=2
       - SPARK_WORKER_MEMORY=2G
+      - HOME=/tmp
     volumes:
       - ./google-key.json:/opt/spark/google-key.json
     networks:
@@ -57,15 +61,17 @@ services:
       - spark-master
     command: ["/bin/bash", "-c", "spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"]
 
-  # Spark Worker node 3
+  # Spark Worker 3
   spark-worker-3:
     image: bitnami/spark:latest
     container_name: spark-worker-3
+    user: "1000:1000"
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKER_CORES=2
       - SPARK_WORKER_MEMORY=2G
+      - HOME=/tmp
     volumes:
       - ./google-key.json:/opt/spark/google-key.json
     networks:
