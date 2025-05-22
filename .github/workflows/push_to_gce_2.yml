@@ -1,0 +1,110 @@
+name: Push-to-GCE2
+
+on:
+  push:
+    branches:
+      - main
+    # paths:
+    #   - "airflow/**"
+    #   - "spark/**"
+
+jobs:
+  deploy:
+    name: Deploy to GCE on push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the files
+        uses: actions/checkout@v2
+        
+      - name: Ensure rsync is installed on GCE
+        uses: appleboy/ssh-action@master
+        with:
+          host: 34.87.3.49
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            sudo apt-get update
+            sudo apt-get install -y rsync
+
+      # - name: Deploy to GCE VM instance
+      #   uses: easingthemes/ssh-deploy@main
+      #   env:
+      #     SSH_PRIVATE_KEY: ${{ secrets.GCE_SSH_KEY }}
+      #     REMOTE_HOST: 35.230.57.176
+      #     REMOTE_USER: huybuile2004
+      #     TARGET: /home/huybuile2004
+      #     ARGS: "--update --checksum"
+
+      - name: Clone repo to GCE if not already present
+        uses: appleboy/ssh-action@master
+        with:
+          host: 34.87.3.49
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            if [ ! -d "/home/huybuile2004/air_quality_data_analyze/.git" ]; then
+              echo "Cloning repository..."
+              git clone https://github.com/Huy1ee04/air_quality_data_analyze.git /home/huybuile2004/air_quality_data_analyze
+            else
+              echo "Repository already exists."
+            fi
+
+      - name: Update code from GitHub repo
+        uses: appleboy/ssh-action@master
+        with:
+          host: 34.87.3.49
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            cd /home/huybuile2004/air_quality_data_analyze
+            sudo chown -R huybuile2004:huybuile2004 /home/huybuile2004/air_quality_data_analyze
+            git reset --hard
+            git clean -fd
+            git pull origin main
+          
+      - name: Copy service account from Github to GCE instance
+        uses: appleboy/ssh-action@master
+        with:
+          host: 34.87.3.49
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            echo "${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}" > /home/huybuile2004/encoded_key.txt
+            base64 -d /home/huybuile2004/encoded_key.txt > /home/huybuile2004/air_quality_data_analyze/airflow/google-key.json
+            base64 -d /home/huybuile2004/encoded_key.txt > /home/huybuile2004/air_quality_data_analyze/spark/google-key.json
+            
+      - name: Create .env file on GCE instance
+        uses: appleboy/ssh-action@master
+        with:
+          host: 34.87.3.49
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" > /home/huybuile2004/air_quality_data_analyze/airflow/.env
+            echo "GOOGLE_SERVICE_ACCOUNT_KEY=/opt/airflow/google-key.json" >> /home/huybuile2004/air_quality_data_analyze/airflow/.env
+            echo "GOOGLE_SERVICE_ACCOUNT_KEY=/opt/spark/google-key.json" >> /home/huybuile2004/air_quality_data_analyze/spark/.env
+
+      - name: Fix file permissions for airflow user
+        uses: appleboy/ssh-action@master
+        with:
+          host: 34.87.3.49
+          username: huybuile2004
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            sudo chown -R 50000:0 /home/huybuile2004/air_quality_data_analyze/airflow
+
+
+      # - name: Restart Airflow services
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: 35.230.57.176
+      #     username: huybuile2004
+      #     key: ${{ secrets.GCE_SSH_KEY }}
+      #     script: |
+      #       cd /home/huybuile2004/air_quality_data_analyze/airflow
+      #       docker compose down
+      #       docker compose up -d
+      #       sleep 5
+      #       docker-compose ps | grep "healthy" || exit 1
+      
