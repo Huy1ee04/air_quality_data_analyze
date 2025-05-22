@@ -70,7 +70,18 @@ dim_location.write.format("bigquery") \
     .mode("append") \
     .save()
 
-for folder in folder_paths[::-1]:
+# Hàm trích xuất datetime từ đường dẫn thư mục
+def extract_date_from_path(path):
+    match = re.search(r"year=(\d+)/month=(\d+)/day=(\d+)", path)
+    if match:
+        y, m, d = map(int, match.groups())
+        return datetime(y, m, d)
+    return None
+
+# Sắp xếp theo datetime
+folder_paths_sorted = sorted(folder_paths, key=extract_date_from_path, reverse=True)
+
+for folder in folder_paths_sorted:
     full_path = f"gs://project-bigdata-bucket/{folder}"
     print(f"🚀 Đang xử lý phân vùng: {full_path}")
 
@@ -102,7 +113,7 @@ for folder in folder_paths[::-1]:
         for bp_lo, bp_hi, i_lo, i_hi in breakpoints:
             if bp_lo <= concentration <= bp_hi:
                 return ((i_hi - i_lo) / (bp_hi - bp_lo)) * (concentration - bp_lo) + i_lo
-        return None
+        return 8.5
 
     aqi_pm25_udf = udf(calculate_aqi_pm25, DoubleType())
     df = df.withColumn("aqi", aqi_pm25_udf(df["pm2_5"]))
