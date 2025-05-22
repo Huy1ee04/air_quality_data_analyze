@@ -123,14 +123,6 @@ for folder in folder_paths_sorted:
     df_with_date_id = df.join(dim_date, on="date", how="left")
     df_with_ids = df_with_date_id.join(dim_location, on=["lat", "lon"], how="left")
 
-    # ✅ Ghi dim_date và dim_location 1 lần duy nhất
-    dim_date.write.format("bigquery") \
-        .option("table", "iron-envelope-455716-g8.aq_data.dim_date") \
-        .option("parentProject", "iron-envelope-455716-g8") \
-        .option("temporaryGcsBucket", "project-bigdata-bucket") \
-        .mode("append") \
-        .save()
-
     fact_air_quality = df_with_ids.select(
         "date_id", "hour", "location_id", "pm2_5", "pm10", "o3", "so2", "no2", "co", "aqi", "aqi_level"
     ).withColumn("fact_id", hash("date_id", "hour", "location_id"))
@@ -163,6 +155,15 @@ for folder in folder_paths_sorted:
     # daily_avg_aqi_df.write.mode("overwrite").parquet("gs://project-bigdata-bucket/star/daily_avg_aqi")
 
     # ==================== Ghi ra BigQuery ====================
+
+    # ✅ Ghi dim_date và dim_location 1 lần duy nhất
+    dim_date.write.format("bigquery") \
+        .option("table", "iron-envelope-455716-g8.aq_data.dim_date") \
+        .option("parentProject", "iron-envelope-455716-g8") \
+        .option("temporaryGcsBucket", "project-bigdata-bucket") \
+        .mode("append") \
+        .save()
+    
     fact_air_quality.write.format("bigquery") \
         .option("table", "iron-envelope-455716-g8.aq_data.fact_air_quality") \
         .option("parentProject", "iron-envelope-455716-g8") \
