@@ -16,6 +16,8 @@ from streamlit_folium import st_folium
 from folium.plugins import HeatMap
 from datetime import datetime, timedelta, timezone, date
 import time as pytime
+import joblib
+import matplotlib.pyplot as plt
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/buihung/project bigdata/visualize/google-key.json"
 client = bigquery.Client()
@@ -26,7 +28,7 @@ st.set_page_config(page_title='Air quality data', layout='wide', page_icon=':amb
 # bbox = box(102, 8, 112, 24)
 # cropped_shape = shape.clip(bbox)
 
-page = st.sidebar.radio("Side menu", ["Yearly Analysis", "Monthly Analysis","Daily Analysis", "Streaming Analysis"])
+page = st.sidebar.radio("Side menu", ["Yearly Analysis", "Monthly Analysis","Daily Analysis", "Streaming Analysis", "Forecasting Analysis"])
 
 client = bigquery.Client()
 
@@ -436,6 +438,38 @@ if page == "Streaming Analysis":
             st.caption(f"🕒 Dữ liệu hiển thị tại thời điểm: **{t.strftime('%Y-%m-%d %H:%M UTC')}**")
 
         pytime.sleep(2)
+
+elif page == "Forecasting Analysis":
+    st.title("Forecasting Air Quality Data")
+    # 🧠 Load mô hình đã huấn luyện
+    model = joblib.load("/Users/buihung/project bigdata/model/aqi_model.pkl")
+
+    # 🔢 Tạo dữ liệu input cho ngày 27/5/2025
+    day = pd.Timestamp("2025-05-27")
+    hours = list(range(24))
+
+    predict_df = pd.DataFrame({
+        "day_of_week": [day.dayofweek + 1] * 24,
+        "hour": hours
+    })
+
+    # Sắp xếp đúng thứ tự cột như khi training (quan trọng!)
+    predict_df = predict_df[["day_of_week", "hour"]]
+
+    # 🔮 Dự đoán AQI
+    predicted_aqi = model.predict(predict_df)
+
+    # 🎨 Hiển thị biểu đồ dự đoán
+    st.subheader("📈 Dự đoán AQI tại HUST theo giờ (ngày 28/05/2025)")
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.plot(hours, predicted_aqi, marker="o", color="blue", label="Dự đoán AQI")
+    ax.set_xlabel("Giờ")
+    ax.set_ylabel("AQI")
+    ax.set_title("Dự đoán AQI theo giờ trong ngày")
+    ax.grid(True)
+    ax.legend()
+    st.pyplot(fig)
+
 
 
     # # Attribute selection
