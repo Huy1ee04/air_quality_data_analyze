@@ -6,6 +6,7 @@ import pyarrow.parquet as pq
 import pandas as pd
 from dotenv import load_dotenv
 from google.cloud import storage
+from great_expectations.dataset.pandas_dataset import PandasDataset
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +27,25 @@ gcs = pa.fs.GcsFileSystem()
 # Initialize GCS Client
 storage_client = storage.Client()
 bucket = storage_client.bucket(GCS_BUCKET)
+
+def log_lineage_to_bq():
+    client = bigquery.Client()
+    table = "metadata_dataset.feature_lineage"
+    
+    row = {
+        "feature_name": "aqi",
+        "version": "v1",
+        "source": "OpenWeather API",
+        "destination": "GCS: gs://your-bucket/raw_aqi/",
+        "pipeline_name": "airflow_openweather_gcs",
+        "transformation_description": "Fetch AQI from API, save raw",
+        "transformation_code_gcs_uri": "gs://your-code-bucket/airflow_dag.py",
+        "executed_at": datetime.utcnow()
+    }
+
+    errors = client.insert_rows_json(table, [row])
+    if errors:
+        raise Exception(f"Lineage insert failed: {errors}")
 
 
 def upload_large_json_to_gcs(batch_size=25000):
@@ -67,6 +87,22 @@ def upload_large_json_to_gcs(batch_size=25000):
             # Bỏ 3 trường phân vùng khỏi DataFrame
             group_df = group_df.drop(columns=["year", "month", "day"])
 
+            # Trước khi tạo bảng Parquet
+            gx_df = PandasDataset(group_df)
+
+            # Expectation ví dụ
+            gx_df.expect_column_values_to_be_between("pm2_5", min_value=0, max_value=1000)
+            gx_df.expect_column_values_to_not_be_null("dt")
+            gx_df.expect_column_values_to_be_in_set("aqi_level", [1, 2, 3, 4, 5])
+
+            # Kiểm tra
+            validation_result = gx_df.validate()
+            if not validation_result["success"]:
+                print(f"❌ Batch {batch_num} FAILED GX check!")
+                # Option: raise error or skip ghi GCS
+            else:
+                print(f"✅ Batch {batch_num} PASSED GX check.")
+
             table = pa.Table.from_pandas(group_df, schema=schema, preserve_index=False)
             partition_path = f"{GCS_FOLDER}/year={year}/month={month}/day={day}/batch_{batch_num}.parquet"
 
@@ -90,4 +126,6 @@ def upload_large_json_to_gcs(batch_size=25000):
         if batch:
             write_batch_to_gcs(batch, count)
 
+
+    log_lineage_to_bq()
     print(f"🎉 Hoàn tất tải dữ liệu lên GCS theo từng batch Parquet!")

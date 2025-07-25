@@ -36,7 +36,7 @@ if page == "Daily Analysis":
     st.title("Daily Air quality Data Analysis")
     selected_date = st.date_input(
         "Chọn ngày",
-        value=date(2025, 5, 25),
+        value=date(2025, 6, 7),
         min_value=date(2023, 1, 1),
         max_value=date(2025, 12, 31)
     )
@@ -51,37 +51,68 @@ if page == "Daily Analysis":
     lon = float(lon_slider)
     
     # Câu truy vấn
+    # QUERY1 = f"""
+    #     SELECT
+    #         fa.hour,
+    #         fa.aqi,
+    #         fa.so2,
+    #         fa.no2,
+    #         fa.co,
+    #         d.date,
+    #         l.lat,
+    #         l.lon
+    #     FROM
+    #         `iron-envelope-455716-g8.aq_data.fact_air_quality` fa
+    #     JOIN (
+    #         SELECT DISTINCT date_id, date
+    #         FROM `iron-envelope-455716-g8.aq_data.dim_date`
+    #     ) d
+    #     ON fa.date_id = d.date_id
+    #     JOIN (
+    #         SELECT DISTINCT location_id, lat, lon
+    #         FROM `iron-envelope-455716-g8.aq_data.dim_location`
+    #     ) l
+    #     ON fa.location_id = l.location_id
+    #     WHERE
+    #         d.date = '{selected_date.strftime("%Y-%m-%d")}'
+    #         AND l.lat = {lat}
+    #         AND l.lon = {lon}
+    #     ORDER BY
+    #         fa.hour
+    # """
+
     QUERY1 = f"""
-        SELECT
-            fa.hour,
-            fa.aqi,
-            fa.so2,
-            fa.no2,
-            fa.co,
-            d.date,
-            l.lat,
-            l.lon
-        FROM
-            `iron-envelope-455716-g8.aq_data.fact_air_quality` fa
-        JOIN
-            `iron-envelope-455716-g8.aq_data.dim_date` d
-        ON
-            fa.date_id = d.date_id
-        JOIN
-            `iron-envelope-455716-g8.aq_data.dim_location` l
-        ON
-            fa.location_id = l.location_id
-        WHERE
-            d.date = '{selected_date.strftime('%Y-%m-%d')}'
-            AND l.lat = {lat}
-            AND l.lon = {lon}
-        ORDER BY
-            fa.hour
-    """
+    SELECT
+        fa.hour,
+        fa.aqi,
+        fa.so2,
+        fa.no2,
+        fa.co
+    FROM
+        `iron-envelope-455716-g8.aq_data.fact_air_quality` fa
+    WHERE
+        fa.date_id = 20250607
+        AND fa.location_id = 688953053
+    ORDER BY
+        fa.hour
+"""
 
     # Thực hiện truy vấn
     query_job = client.query(QUERY1)
     results = query_job.result().to_dataframe()
+
+     # Phân tích thống kê cơ bản cho AQI
+    if True:
+        st.subheader("Phân tích thống kê AQI")
+        aqi_stats = {
+            "Trung bình": results['aqi'].mean(),
+            "Tối thiểu": results['aqi'].min(),
+            "Tối đa": results['aqi'].max(),
+            "Độ lệch chuẩn": results['aqi'].std()
+        }
+        st.write(aqi_stats)
+    else:
+        st.warning("Không có dữ liệu để phân tích thống kê cho ngày và vị trí đã chọn.")
     
     # Hiển thị kết quả
     st.write("Dữ liệu AQI theo giờ:")
@@ -374,7 +405,7 @@ if page == "Streaming Analysis":
 
     # Truy vấn dữ liệu AQI 5 giờ gần nhất từ BigQuery
     now = datetime.now(timezone.utc)
-    five_hours_ago = now - timedelta(hours=5)
+    five_hours_ago = now - timedelta(hours=6)
 
     QUERY_STREAMING = f"""
         SELECT DISTINCT
@@ -424,28 +455,26 @@ if page == "Streaming Analysis":
     map_placeholder = st.empty()
 
     # Bắt đầu tua lại
-    for t in time_steps:
-        df_t = df[df["time_minute"] == t]
+    t = time_steps[0]
+    df_t = df[df["time_minute"] == t]
 
-        m = folium.Map(location=[16, 106], zoom_start=6)
-        heat_data = [
-            [row["lat"], row["lon"], float(row["aqi"])] for _, row in df_t.iterrows()
-        ]
-        HeatMap(heat_data, radius=12).add_to(m)
+    m = folium.Map(location=[16, 106], zoom_start=6)
+    heat_data = [
+        [row["lat"], row["lon"], float(row["aqi"])] for _, row in df_t.iterrows()
+    ]
+    HeatMap(heat_data, radius=12).add_to(m)
 
-        with map_placeholder.container():
-            st_folium(m, width=700, height=500)
-            st.caption(f"🕒 Dữ liệu hiển thị tại thời điểm: **{t.strftime('%Y-%m-%d %H:%M UTC')}**")
-
-        pytime.sleep(2)
+    with map_placeholder.container():
+        st_folium(m, width=700, height=500)
+        st.caption(f"🕒 Dữ liệu hiển thị tại thời điểm: **{t.strftime('%Y-%m-%d %H:%M UTC')}**")
 
 elif page == "Forecasting Analysis":
     st.title("Forecasting Air Quality Data")
     # 🧠 Load mô hình đã huấn luyện
     model = joblib.load("/Users/buihung/project bigdata/model/aqi_model.pkl")
 
-    # 🔢 Tạo dữ liệu input cho ngày 27/5/2025
-    day = pd.Timestamp("2025-05-27")
+    # 🔢 Tạo dữ liệu input cho ngày 
+    day = pd.Timestamp("2025-06-14")
     hours = list(range(24))
 
     predict_df = pd.DataFrame({
@@ -460,7 +489,7 @@ elif page == "Forecasting Analysis":
     predicted_aqi = model.predict(predict_df)
 
     # 🎨 Hiển thị biểu đồ dự đoán
-    st.subheader("📈 Dự đoán AQI tại HUST theo giờ (ngày 28/05/2025)")
+    st.subheader("📈 Dự đoán AQI tại HUST theo giờ (ngày 14/06/2025)")
     fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(hours, predicted_aqi, marker="o", color="blue", label="Dự đoán AQI")
     ax.set_xlabel("Giờ")

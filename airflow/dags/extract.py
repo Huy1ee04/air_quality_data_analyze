@@ -4,6 +4,9 @@ import time
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import pandas as pd
+import numpy as np
+from great_expectations.dataset.pandas_dataset import PandasDataset
 
 # Load API key từ .env
 load_dotenv()
@@ -117,3 +120,18 @@ def fetch_air_quality_data():
     write_new_start_time(end_time)
     print(f"Data written incrementally to {file_path}")
     print(f"New start time saved: {end_time}")
+
+    # Đọc dữ liệu JSON đã lưu thành DataFrame
+    df = pd.read_json(file_path)
+
+    # Bọc bằng Great Expectations
+    gx_df = PandasDataset(df)
+
+    # Thêm các expectation kiểm tra dữ liệu
+    gx_df.expect_column_values_to_not_be_null("dt")
+    gx_df.expect_column_values_to_be_between("aqi_level", min_value=1, max_value=5)
+    gx_df.expect_column_values_to_be_in_set("lat", list(np.arange(8.0, 23.5 + 0.25, 0.25)))
+
+    # Thực thi và hiển thị kết quả
+    results = gx_df.validate()
+    print(results)

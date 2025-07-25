@@ -22,6 +22,6 @@ with DAG(
         docker exec spark-worker-driver spark-submit \
           --master spark://spark-master:7077 \
           --deploy-mode client \
-          /opt/spark/work-dir/test.py
+          /opt/spark/work-dir/write_to_bigquery.py
         """
     )
